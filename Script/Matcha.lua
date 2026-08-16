@@ -504,7 +504,7 @@ function Interceptor.Initialize()
     runInterceptor()
 end
 
-if game.PlaceId ~= 122868680533440 then
+if game.PlaceId ~= 2788229376 then
     Interceptor.Initialize()
 end 
 end
@@ -1325,7 +1325,7 @@ local function UseDatArgBoi()
     if ReignMatcha.BulletRedirection.Settings.MagicBullet then
         shootAtTarget()
         local place_id = game.PlaceId
-        if place_id == 122868680533440 or place_id == 122868680533440 then
+        if place_id == 2788229376 or place_id == 120685460695697 then
             getgenv().ShootPlayer(ReignMatcha.BulletRedirection.Internal.LockedTarget, tool)
         end
     end
@@ -1335,7 +1335,7 @@ local function UseDatArgBoiV2(Target)
     if ReignMatcha.BulletRedirection.Settings.MagicBullet then
         shootAtTargetV2(Target)
         local place_id = game.PlaceId
-        if place_id == 122868680533440 or place_id == 122868680533440 then
+        if place_id == 2788229376 or place_id == 120685460695697 then
             getgenv().ShootPlayer(Target, tool)
         end
     end
@@ -3571,125 +3571,191 @@ LocalVisuals:toggle({
     end
 })
 if getnamecallmethod then
-    Client = Players.LocalPlayer
-    Mouse = Client:GetMouse()
+ Client = Players.LocalPlayer
+ Mouse = Client:GetMouse()
 
-    local Script = {
-        Targeting = {
-            Target = nil,
-        },
-        Utility = {
-            Gun = {}
-        }
+local Script = {
+    Functions = {},
+    Targeting = {
+        Target = nil,
+    },
+    Connections = {},
+    Utility = {
+        Gun = {}
     }
-    local Config = {
-        BulletTp = false,
-        Keybind = Enum.KeyCode.C,
-        Part = "Head"
-    }
+}
+local Config = {
+    BulletTp = false,
+    Keybind = Enum.KeyCode.C,
+    Part = "Head"
+}
+BulletTPtab:toggle({
+    name = "Bullet Tp",
+    def = Config.BulletTp,
+    callback = function(v)
+        Config.BulletTp = v
 
-    BulletTPtab:dropdown({
-        name = "Bullet TP Part",
-        def = Config.Part,
-        options = {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"},
-        callback = function(v)
-            Config.Part = v
-        end
-    })
-
-    BulletTPtab:toggle({
-        name = "Bullet Tp",
-        def = Config.BulletTp,
-        callback = function(v)
-            Config.BulletTp = v
-        end
-    })
-    BulletTPtab:keybind({
-        name = "Bullet Tp Keybind",
-        def = Config.Keybind,
-        callback = function(state)
-            Config.Keybind = state
-        end
-    })
-
-    Script.Functions.UpdateTargetVisualizer = function()
-        if Script.Visualizer then
-            Script.Visualizer:Destroy()
-            Script.Visualizer = nil
-        end
-
-        local Target = Script.Targeting.Target
-        if Target and Target.Character then
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "TargetVisualizer"
-            highlight.FillColor = Color3.fromRGB(255, 50, 50)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.FillTransparency = 0.5
-            highlight.OutlineTransparency = 0
-            highlight.Adornee = Target.Character
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = Target.Character
-            Script.Visualizer = highlight
-        end
+    end
+})
+BulletTPtab:keybind({
+    name     = "Bullet Tp Keybind",
+    def      = Config.Keybind,  
+    callback = function(state)
+        Config.Keybind = state
+    end
+})
+Script.Functions.UpdateTargetVisualizer = function()
+    if Script.Visualizer then
+        Script.Visualizer:Destroy()
+        Script.Visualizer = nil
     end
 
-    function Script.Targeting.GetClosestTarget()
-        local ClosestPlayer, ClosestPart, MinDist = nil, nil, math.huge
-        local MousePos = Mouse.Hit.Position
+    local Target = Script.Targeting.Target
+    if Target and Target.Character then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "TargetVisualizer"
+        highlight.FillColor = Color3.fromRGB(255, 50, 50)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = Target.Character
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = Target.Character
+        Script.Visualizer = highlight
+    end
+end
 
-        for _, Player in ipairs(Players:GetPlayers()) do
-            if Player ~= Client and Player.Character then
-                for _, part in ipairs(Player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
-                        if onScreen then
-                            local dist = (Vector2.new(screenPos.X, screenPos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                            if dist < MinDist then
-                                MinDist = dist
-                                ClosestPlayer = Player
-                                ClosestPart = part
-                            end
+function Script.Targeting.GetClosestTarget()
+    local ClosestPlayer, ClosestPart, MinDist = nil, nil, math.huge
+    local MousePos = Mouse.Hit.Position
+
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= Client and Player.Character then
+            for _, part in ipairs(Player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - UserInputService:GetMouseLocation()).Magnitude
+                        if dist < MinDist then
+                            MinDist = dist
+                            ClosestPlayer = Player
+                            ClosestPart = part
                         end
                     end
                 end
             end
         end
-
-        Script.Targeting.Target = ClosestPlayer
-        UpdateTargetVisualizer()
     end
 
-    UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-        if not GameProcessed and Input.KeyCode == Config.Keybind then
-            Script.Targeting.GetClosestTarget()
+    Script.Targeting.Target = ClosestPlayer
+    Script.Targeting.TargetPart = ClosestPart
+    Script.Functions.UpdateTargetVisualizer()
+end
+
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if not GameProcessed and Input.KeyCode == Config.Keybind then
+        Script.Targeting.GetClosestTarget()
+    end
+end)
+
+local Mt = getrawmetatable(game)
+setreadonly(Mt, false)
+local OldIndex = Mt.__index
+
+Mt.__index = function(Self, Index)
+    if not checkcaller() and Self == Mouse then
+        if (Index == "Hit" or (Index == "Target" and game.PlaceId == 2788229376)) and Config.BulletTp then
+            local Target = Script.Targeting.Target
+            if Target and Target.Character then
+                local Part = Target.Character:FindFirstChild(Config.Part)
+
+                if Part then
+                    return CFrame.new(Part.Position)
+                end
+            end
+        end
+    end
+    return OldIndex(Self, Index)
+end
+
+Script.Functions.CFrameToOffset = function(Origin, Target)
+    local ActualOrigin = Origin * CFrame.new(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0)
+    return ActualOrigin:ToObjectSpace(Target):inverse()
+end
+
+Script.Functions.TeleportBullet = function(Tool)
+    local Target = Script.Targeting.Target
+    if not (Target and Target.Character and Target.Character:FindFirstChild("HumanoidRootPart")) then return end
+
+    local OriginPart = Client.Character and Client.Character:FindFirstChild("HumanoidRootPart")
+    local TargetPart = Target.Character.HumanoidRootPart
+
+    if OriginPart and TargetPart then
+        local OriginalGrip = Tool.Grip
+        Tool.Parent = Client.Backpack
+        Tool.Grip = Script.Functions.CFrameToOffset(Client.Character.RightHand.CFrame, TargetPart.CFrame)
+        Tool.Parent = Client.Character
+        RunService.RenderStepped:Wait()
+        Tool.Parent = Client.Backpack
+        Tool.Grip = OriginalGrip
+        Tool.Parent = Client.Character
+    end
+end
+
+Script.Functions.HandleCharacter = function(Character)
+    for _, Conn in ipairs({ "CharacterChildAdded", "ChildRemovingCharacter" }) do
+        if Script.Connections[Conn] then
+            Script.Connections[Conn]:Disconnect()
+        end
+    end
+
+    Script.Connections.CharacterChildAdded = Character.ChildAdded:Connect(function(Tool)
+        if Tool:IsA("Tool") then
+            for _, Conn in ipairs(getconnections(Tool:GetPropertyChangedSignal("Grip"))) do
+                Conn:Disable()
+            end
+
+            Script.Connections.ToolActivated = Tool.Activated:Connect(function()
+                if Config.BulletTp then
+                    Script.Functions.TeleportBullet(Tool)
+                end
+            end)
         end
     end)
 
-    local originalHitIndex
-    local mt = getrawmetatable(game)
-    if mt then
-        setreadonly(mt, false)
-        originalHitIndex = mt.__index
-
-        mt.__index = function(self, key)
-            if not checkcaller() and self == Mouse and key == "Hit" and Config.BulletTp then
-                local target = Script.Targeting.Target
-                if target and target.Character then
-                    local part = target.Character:FindFirstChild(Config.Part)
-                    if part then
-                        return CFrame.new(part.Position)
-                    end
-                end
-            end
-            return originalHitIndex(self, key)
+    Script.Connections.ChildRemovingCharacter = Character.ChildRemoved:Connect(function()
+        Script.Utility.Gun.Tool = nil
+        if Script.Connections.ToolActivated then
+            Script.Connections.ToolActivated:Disconnect()
         end
-    else
-        warn("[BulletTP] Failed to get raw metatable. Feature may not work.")
-    end
-
-    print("[BulletTP] Optimized implementation loaded successfully.")
+    end)
 end
 
+local function SetupCharacter(Char)
+    Script.Functions.HandleCharacter(Char)
+end
+
+local CurrentCharacter = Client.Character or Client.CharacterAdded:Wait()
+SetupCharacter(CurrentCharacter)
+
+Client.CharacterAdded:Connect(SetupCharacter)
+
+Client.CharacterRemoving:Connect(function()
+    for _, Conn in ipairs({ "CharacterChildAdded", "ChildRemovingCharacter" }) do
+        if Script.Connections[Conn] then
+            Script.Connections[Conn]:Disconnect()
+        end
+    end
+end)
+else
+    BulletTPtab:toggle({
+	    name     = "your executor not support",
+	    def      = f23,
+	    callback = function(v)
+	        f23 = v
+	    end
+	})
+end
 LocalVisuals:colorpicker({
     name = "Bullet Tracer Color",
     def = Settings.StartColor,
@@ -5426,7 +5492,7 @@ user_input_service.InputBegan:Connect(function(input, game_processed)
                 task.wait(0.2)
 
                 local ammo
-                if game.PlaceId == 122868680533440 then
+                if game.PlaceId == 2788229376 then
                     ammo = tool:FindFirstChild("Ammo")
                 else
                     local tool_script = tool:FindFirstChild("Script")
@@ -5996,7 +6062,7 @@ RunService.Heartbeat:Connect(function()
     if not getgenv().ToggleAmmoHack then return end
     local tool = GetLocalPlayerTool()
     if tool then
-        if game.PlaceId == 122868680533440 then
+        if game.PlaceId == 2788229376 then
             local toolScript = tool 
         else
             local toolScript = tool:FindFirstChild("Script")
