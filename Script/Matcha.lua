@@ -1329,29 +1329,57 @@ task.spawn(function()
     end
 end)
 
--- Hook workspace:Raycast() method
+-- ========== MAGIC BULLET DEBUG HOOK ==========
+
+print("[MagicBullet] Starting Magic Bullet setup...")
+
 local function HookWorkspaceRaycast()
+    print("[MagicBullet] Attempting to hook workspace.Raycast...")
+    
     local success, oldRaycast = pcall(function()
         return workspace.Raycast
     end)
     
-    if not success or type(oldRaycast) ~= "function" then
-        print("[MagicBullet] Could not hook workspace.Raycast")
+    if not success then
+        print("[MagicBullet] FAILED to get workspace.Raycast: " .. tostring(success))
         return
     end
     
+    if type(oldRaycast) ~= "function" then
+        print("[MagicBullet] workspace.Raycast is not a function! Type: " .. type(oldRaycast))
+        return
+    end
+    
+    print("[MagicBullet] workspace.Raycast found! Hooking...")
+    
     workspace.Raycast = function(self, origin, direction, params)
+        print("[MagicBullet] RAYCAST HOOK TRIGGERED!")
+        print("[MagicBullet] MagicBullet Enabled:", getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet)
+        print("[MagicBullet] Origin:", origin)
+        print("[MagicBullet] Direction:", direction)
+        
         if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
             local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+            print("[MagicBullet] LockedTarget:", target and target.Name or "None")
+            
             if target and target.Character then
                 local targetPart = target.Character:FindFirstChild("Head")
+                print("[MagicBullet] Target Head:", targetPart and targetPart.Name or "None")
+                
                 if targetPart then
                     local targetPos = targetPart.Position
                     local newDirection = (targetPos - origin).Unit * direction.Magnitude
-                    return oldRaycast(self, origin, newDirection, params)
+                    print("[MagicBullet] Redirecting to:", targetPos)
+                    print("[MagicBullet] New Direction:", newDirection)
+                    
+                    local result = oldRaycast(self, origin, newDirection, params)
+                    print("[MagicBullet] Raycast result:", result and "Hit!" or "Miss!")
+                    return result
                 end
             end
         end
+        
+        print("[MagicBullet] Using original raycast")
         return oldRaycast(self, origin, direction, params)
     end
     
@@ -1359,6 +1387,62 @@ local function HookWorkspaceRaycast()
 end
 
 pcall(HookWorkspaceRaycast)
+
+-- ========== HOOK GUNHANDLER.GET AIM ==========
+
+local function HookGunHandler()
+    print("[MagicBullet] Attempting to hook GunHandler...")
+    
+    local success, GunHandler = pcall(function()
+        return require(ReplicatedStorage.Modules.GunHandler)
+    end)
+    
+    if not success then
+        print("[MagicBullet] Could not find GunHandler")
+        return
+    end
+    
+    print("[MagicBullet] GunHandler found!")
+    
+    if not GunHandler.GetAim then
+        print("[MagicBullet] GunHandler.GetAim not found")
+        return
+    end
+    
+    print("[MagicBullet] GunHandler.GetAim found! Hooking...")
+    
+    local oldGetAim = GunHandler.GetAim
+    
+    GunHandler.GetAim = function(origin)
+        print("[MagicBullet] GetAim HOOK TRIGGERED!")
+        print("[MagicBullet] Origin:", origin)
+        
+        if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
+            local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+            print("[MagicBullet] GetAim Target:", target and target.Name or "None")
+            
+            if target and target.Character then
+                local targetPart = target.Character:FindFirstChild("Head")
+                if targetPart then
+                    local targetPos = targetPart.Position
+                    local direction = (targetPos - origin).Unit
+                    local distance = (targetPos - origin).Magnitude
+                    print("[MagicBullet] GetAim Redirecting to:", targetPos)
+                    return direction, distance
+                end
+            end
+        end
+        
+        print("[MagicBullet] GetAim using original")
+        return oldGetAim(origin)
+    end
+    
+    print("[MagicBullet] GunHandler.GetAim hooked successfully!")
+end
+
+pcall(HookGunHandler)
+
+print("[MagicBullet] Magic Bullet setup complete!")
 
 local function UseDatArgBoi()
     if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
