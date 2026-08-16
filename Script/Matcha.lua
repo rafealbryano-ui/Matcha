@@ -1236,75 +1236,67 @@ LuasVisuals:dropdown({
 })
 
 local Workspace = game:GetService("Workspace")
+
 local LocalPlayer = Players.LocalPlayer
 
 local function shootAtTarget()
     local locked = ReignMatcha.BulletRedirection.Internal.LockedTarget
-    if not locked or not locked.Character then return end
-    
-    local targetHead = locked.Character:FindFirstChild("Head")
+    local target = locked and locked.Character
+    local targetHead = target and target:FindFirstChild("Head")
     if not targetHead then return end
-    
-    local char = LocalPlayer.Character
-    if not char then return end
-    
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return end
-    
-    local place_id = game.PlaceId
-    
-    if place_id == 2788229376 or place_id == 120685460695697 then
-        local handle = tool:FindFirstChild("Handle")
-        if handle then
-            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
-        end
-    else
-        ReplicatedStorage.MainEvent:FireServer("Shoot", {
-            [1] = {},
-            [2] = {},
-            [3] = hrp.Position,
-            [4] = hrp.Position,
-            [5] = Workspace:GetServerTimeNow()
+
+    local argument1 = "Shoot"
+    local argument2 = {
+        [1] = {},
+        [2] = {},
+        [3] = LocalPlayer.Character.HumanoidRootPart.Position,
+        [4] = LocalPlayer.Character.HumanoidRootPart.Position,
+        [5] = Workspace:GetServerTimeNow()
+    }
+
+    for i = 1, 5 do
+        table.insert(argument2[1], {
+            ["Instance"] = targetHead,
+            ["Normal"] = targetHead.Position,
+            ["Position"] = targetHead.Position
+        })
+        table.insert(argument2[2], {
+            ["thePart"] = targetHead,
+            ["theOffset"] = CFrame.new(0, 0, 0)
         })
     end
-end
 
-function shootAtTargetV2(LockedTarget2)
-    if not LockedTarget2 or not LockedTarget2.Character then return end
-    
-    local targetHead = LockedTarget2.Character:FindFirstChild("Head")
+    ReplicatedStorage.MainEvent:FireServer(argument1, argument2)
+end
+ function shootAtTargetV2(LockedTarget2)
+    local locked = LockedTarget2
+    local target = locked and locked.Character
+    local targetHead = target and target:FindFirstChild("Head")
     if not targetHead then return end
-    
-    local char = LocalPlayer.Character
-    if not char then return end
-    
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return end
-    
-    local place_id = game.PlaceId
-    
-    if place_id == 2788229376 or place_id == 120685460695697 then
-        local handle = tool:FindFirstChild("Handle")
-        if handle then
-            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
-        end
-    else
-        ReplicatedStorage.MainEvent:FireServer("Shoot", {
-            [1] = {},
-            [2] = {},
-            [3] = hrp.Position,
-            [4] = hrp.Position,
-            [5] = Workspace:GetServerTimeNow()
+
+    local argument1 = "Shoot"
+    local argument2 = {
+        [1] = {},
+        [2] = {},
+        [3] = LocalPlayer.Character.HumanoidRootPart.Position,
+        [4] = LocalPlayer.Character.HumanoidRootPart.Position,
+        [5] = Workspace:GetServerTimeNow()
+    }
+
+    for i = 1, 5 do
+        table.insert(argument2[1], {
+            ["Instance"] = targetHead,
+            ["Normal"] = targetHead.Position,
+            ["Position"] = targetHead.Position
+        })
+        table.insert(argument2[2], {
+            ["thePart"] = targetHead,
+            ["theOffset"] = CFrame.new(0, 0, 0)
         })
     end
-end
 
+    ReplicatedStorage.MainEvent:FireServer(argument1, argument2)
+end
 local function GetLocalPlayerTool()
     local character = LocalPlayer.Character
     if not character or not character.Parent then
@@ -1329,188 +1321,23 @@ task.spawn(function()
     end
 end)
 
--- ========== MAGIC BULLET DEBUG HOOK ==========
-
-print("[MagicBullet] Starting Magic Bullet setup...")
-
-local function HookWorkspaceRaycast()
-    print("[MagicBullet] Attempting to hook workspace.Raycast...")
-    
-    local success, oldRaycast = pcall(function()
-        return workspace.Raycast
-    end)
-    
-    if not success then
-        print("[MagicBullet] FAILED to get workspace.Raycast: " .. tostring(success))
-        return
-    end
-    
-    if type(oldRaycast) ~= "function" then
-        print("[MagicBullet] workspace.Raycast is not a function! Type: " .. type(oldRaycast))
-        return
-    end
-    
-    print("[MagicBullet] workspace.Raycast found! Hooking...")
-    
-    workspace.Raycast = function(self, origin, direction, params)
-        print("[MagicBullet] RAYCAST HOOK TRIGGERED!")
-        print("[MagicBullet] MagicBullet Enabled:", getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet)
-        print("[MagicBullet] Origin:", origin)
-        print("[MagicBullet] Direction:", direction)
-        
-        if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
-            local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-            print("[MagicBullet] LockedTarget:", target and target.Name or "None")
-            
-            if target and target.Character then
-                local targetPart = target.Character:FindFirstChild("Head")
-                print("[MagicBullet] Target Head:", targetPart and targetPart.Name or "None")
-                
-                if targetPart then
-                    local targetPos = targetPart.Position
-                    local newDirection = (targetPos - origin).Unit * direction.Magnitude
-                    print("[MagicBullet] Redirecting to:", targetPos)
-                    print("[MagicBullet] New Direction:", newDirection)
-                    
-                    local result = oldRaycast(self, origin, newDirection, params)
-                    print("[MagicBullet] Raycast result:", result and "Hit!" or "Miss!")
-                    return result
-                end
-            end
-        end
-        
-        print("[MagicBullet] Using original raycast")
-        return oldRaycast(self, origin, direction, params)
-    end
-    
-    print("[MagicBullet] workspace.Raycast hooked successfully!")
-end
-
-pcall(HookWorkspaceRaycast)
-
--- ========== HOOK GUNHANDLER.GET AIM ==========
-
-local function HookGunHandler()
-    print("[MagicBullet] Attempting to hook GunHandler...")
-    
-    local success, GunHandler = pcall(function()
-        return require(ReplicatedStorage.Modules.GunHandler)
-    end)
-    
-    if not success then
-        print("[MagicBullet] Could not find GunHandler")
-        return
-    end
-    
-    print("[MagicBullet] GunHandler found!")
-    
-    if not GunHandler.GetAim then
-        print("[MagicBullet] GunHandler.GetAim not found")
-        return
-    end
-    
-    print("[MagicBullet] GunHandler.GetAim found! Hooking...")
-    
-    local oldGetAim = GunHandler.GetAim
-    
-    GunHandler.GetAim = function(origin)
-        print("[MagicBullet] GetAim HOOK TRIGGERED!")
-        print("[MagicBullet] Origin:", origin)
-        
-        if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
-            local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-            print("[MagicBullet] GetAim Target:", target and target.Name or "None")
-            
-            if target and target.Character then
-                local targetPart = target.Character:FindFirstChild("Head")
-                if targetPart then
-                    local targetPos = targetPart.Position
-                    local direction = (targetPos - origin).Unit
-                    local distance = (targetPos - origin).Magnitude
-                    print("[MagicBullet] GetAim Redirecting to:", targetPos)
-                    return direction, distance
-                end
-            end
-        end
-        
-        print("[MagicBullet] GetAim using original")
-        return oldGetAim(origin)
-    end
-    
-    print("[MagicBullet] GunHandler.GetAim hooked successfully!")
-end
-
-pcall(HookGunHandler)
-
-print("[MagicBullet] Magic Bullet setup complete!")
-
 local function UseDatArgBoi()
-    if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
-    
-    local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-    if not target or not target.Character then return end
-    
-    local targetHead = target.Character:FindFirstChild("Head")
-    if not targetHead then return end
-    
-    local char = LocalPlayer.Character
-    if not char then return end
-    
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return end
-    
-    local place_id = game.PlaceId
-    
-    if place_id == 2788229376 or place_id == 120685460695697 then
-        local handle = tool:FindFirstChild("Handle")
-        if handle then
-            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
+    if ReignMatcha.BulletRedirection.Settings.MagicBullet then
+        shootAtTarget()
+        local place_id = game.PlaceId
+        if place_id == 2788229376 or place_id == 120685460695697 then
+            getgenv().ShootPlayer(ReignMatcha.BulletRedirection.Internal.LockedTarget, tool)
         end
-    else
-        ReplicatedStorage.MainEvent:FireServer("Shoot", {
-            [1] = {},
-            [2] = {},
-            [3] = hrp.Position,
-            [4] = hrp.Position,
-            [5] = Workspace:GetServerTimeNow()
-        })
     end
 end
 
 local function UseDatArgBoiV2(Target)
-    if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
-    if not Target or not Target.Character then return end
-    
-    local targetHead = Target.Character:FindFirstChild("Head")
-    if not targetHead then return end
-    
-    local char = LocalPlayer.Character
-    if not char then return end
-    
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return end
-    
-    local place_id = game.PlaceId
-    
-    if place_id == 2788229376 or place_id == 120685460695697 then
-        local handle = tool:FindFirstChild("Handle")
-        if handle then
-            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
+    if ReignMatcha.BulletRedirection.Settings.MagicBullet then
+        shootAtTargetV2(Target)
+        local place_id = game.PlaceId
+        if place_id == 2788229376 or place_id == 120685460695697 then
+            getgenv().ShootPlayer(Target, tool)
         end
-    else
-        ReplicatedStorage.MainEvent:FireServer("Shoot", {
-            [1] = {},
-            [2] = {},
-            [3] = hrp.Position,
-            [4] = hrp.Position,
-            [5] = Workspace:GetServerTimeNow()
-        })
     end
 end
 local mouseDown = false
