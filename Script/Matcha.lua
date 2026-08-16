@@ -1321,23 +1321,90 @@ task.spawn(function()
     end
 end)
 
-local function UseDatArgBoi()
-    if ReignMatcha.BulletRedirection.Settings.MagicBullet then
-        shootAtTarget()
-        local place_id = game.PlaceId
-        if place_id == 2788229376 or place_id == 120685460695697 then
-            getgenv().ShootPlayer(ReignMatcha.BulletRedirection.Internal.LockedTarget, tool)
+local oldRaycast = workspace.Raycast
+
+workspace.Raycast = function(origin, direction, params)
+    if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
+        local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild("Head")
+            if targetPart then
+                local targetPos = targetPart.Position
+                local newDirection = (targetPos - origin).Unit * direction.Magnitude
+                return oldRaycast(origin, newDirection, params)
+            end
         end
+    end
+    return oldRaycast(origin, direction, params)
+end
+
+local function UseDatArgBoi()
+    if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
+    
+    local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+    if not target or not target.Character then return end
+    
+    local targetHead = target.Character:FindFirstChild("Head")
+    if not targetHead then return end
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local place_id = game.PlaceId
+    
+    if place_id == 2788229376 or place_id == 120685460695697 then
+        local handle = tool:FindFirstChild("Handle")
+        if handle then
+            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
+        end
+    else
+        ReplicatedStorage.MainEvent:FireServer("Shoot", {
+            [1] = {},
+            [2] = {},
+            [3] = hrp.Position,
+            [4] = hrp.Position,
+            [5] = Workspace:GetServerTimeNow()
+        })
     end
 end
 
 local function UseDatArgBoiV2(Target)
-    if ReignMatcha.BulletRedirection.Settings.MagicBullet then
-        shootAtTargetV2(Target)
-        local place_id = game.PlaceId
-        if place_id == 2788229376 or place_id == 120685460695697 then
-            getgenv().ShootPlayer(Target, tool)
+    if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
+    if not Target or not Target.Character then return end
+    
+    local targetHead = Target.Character:FindFirstChild("Head")
+    if not targetHead then return end
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local place_id = game.PlaceId
+    
+    if place_id == 2788229376 or place_id == 120685460695697 then
+        local handle = tool:FindFirstChild("Handle")
+        if handle then
+            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
         end
+    else
+        ReplicatedStorage.MainEvent:FireServer("Shoot", {
+            [1] = {},
+            [2] = {},
+            [3] = hrp.Position,
+            [4] = hrp.Position,
+            [5] = Workspace:GetServerTimeNow()
+        })
     end
 end
 local mouseDown = false
