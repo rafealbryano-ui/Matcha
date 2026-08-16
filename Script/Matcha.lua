@@ -3656,7 +3656,7 @@ if getnamecallmethod then
         end
 
         Script.Targeting.Target = ClosestPlayer
-        Script.Functions.UpdateTargetVisualizer()
+        UpdateTargetVisualizer()
     end
 
     UserInputService.InputBegan:Connect(function(Input, GameProcessed)
