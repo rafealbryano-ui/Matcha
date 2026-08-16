@@ -1329,7 +1329,7 @@ task.spawn(function()
     end
 end)
 
-local function HookAllRaycastMethods()
+llocal function HookAllRaycastMethods()
     local methods = {
         "Raycast",
         "FindPartOnRay",
@@ -1339,35 +1339,40 @@ local function HookAllRaycastMethods()
     }
     
     for _, methodName in ipairs(methods) do
-        local oldMethod = Workspace[methodName]
-        if oldMethod then
-            Workspace[methodName] = function(...)
-                if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
-                    local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-                    if target and target.Character then
-                        local targetPart = target.Character:FindFirstChild("Head")
-                        if targetPart then
-                            if methodName == "Raycast" then
-                                local args = {...}
-                                local origin = args[1]
-                                local direction = args[2]
-                                local params = args[3]
-                                local targetPos = targetPart.Position
-                                local newDirection = (targetPos - origin).Unit * direction.Magnitude
-                                return oldMethod(origin, newDirection, params)
-                            else
-                                return targetPart, targetPart.Position
+        local success, oldMethod = pcall(function()
+            return Workspace[methodName]
+        end)
+        
+        if success and oldMethod and type(oldMethod) == "function" then
+            pcall(function()
+                Workspace[methodName] = function(...)
+                    if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
+                        local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+                        if target and target.Character then
+                            local targetPart = target.Character:FindFirstChild("Head")
+                            if targetPart then
+                                if methodName == "Raycast" then
+                                    local args = {...}
+                                    local origin = args[1]
+                                    local direction = args[2]
+                                    local params = args[3]
+                                    local targetPos = targetPart.Position
+                                    local newDirection = (targetPos - origin).Unit * direction.Magnitude
+                                    return oldMethod(origin, newDirection, params)
+                                else
+                                    return targetPart, targetPart.Position
+                                end
                             end
                         end
                     end
+                    return oldMethod(...)
                 end
-                return oldMethod(...)
-            end
+            end)
         end
     end
 end
 
-HookAllRaycastMethods()
+pcall(HookAllRaycastMethods)
 
 local function UseDatArgBoi()
     if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
