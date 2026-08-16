@@ -1236,67 +1236,75 @@ LuasVisuals:dropdown({
 })
 
 local Workspace = game:GetService("Workspace")
-
 local LocalPlayer = Players.LocalPlayer
 
 local function shootAtTarget()
     local locked = ReignMatcha.BulletRedirection.Internal.LockedTarget
-    local target = locked and locked.Character
-    local targetHead = target and target:FindFirstChild("Head")
+    if not locked or not locked.Character then return end
+    
+    local targetHead = locked.Character:FindFirstChild("Head")
     if not targetHead then return end
-
-    local argument1 = "Shoot"
-    local argument2 = {
-        [1] = {},
-        [2] = {},
-        [3] = LocalPlayer.Character.HumanoidRootPart.Position,
-        [4] = LocalPlayer.Character.HumanoidRootPart.Position,
-        [5] = Workspace:GetServerTimeNow()
-    }
-
-    for i = 1, 5 do
-        table.insert(argument2[1], {
-            ["Instance"] = targetHead,
-            ["Normal"] = targetHead.Position,
-            ["Position"] = targetHead.Position
-        })
-        table.insert(argument2[2], {
-            ["thePart"] = targetHead,
-            ["theOffset"] = CFrame.new(0, 0, 0)
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local place_id = game.PlaceId
+    
+    if place_id == 2788229376 or place_id == 120685460695697 then
+        local handle = tool:FindFirstChild("Handle")
+        if handle then
+            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
+        end
+    else
+        ReplicatedStorage.MainEvent:FireServer("Shoot", {
+            [1] = {},
+            [2] = {},
+            [3] = hrp.Position,
+            [4] = hrp.Position,
+            [5] = Workspace:GetServerTimeNow()
         })
     end
-
-    ReplicatedStorage.MainEvent:FireServer(argument1, argument2)
 end
- function shootAtTargetV2(LockedTarget2)
-    local locked = LockedTarget2
-    local target = locked and locked.Character
-    local targetHead = target and target:FindFirstChild("Head")
+
+function shootAtTargetV2(LockedTarget2)
+    if not LockedTarget2 or not LockedTarget2.Character then return end
+    
+    local targetHead = LockedTarget2.Character:FindFirstChild("Head")
     if not targetHead then return end
-
-    local argument1 = "Shoot"
-    local argument2 = {
-        [1] = {},
-        [2] = {},
-        [3] = LocalPlayer.Character.HumanoidRootPart.Position,
-        [4] = LocalPlayer.Character.HumanoidRootPart.Position,
-        [5] = Workspace:GetServerTimeNow()
-    }
-
-    for i = 1, 5 do
-        table.insert(argument2[1], {
-            ["Instance"] = targetHead,
-            ["Normal"] = targetHead.Position,
-            ["Position"] = targetHead.Position
-        })
-        table.insert(argument2[2], {
-            ["thePart"] = targetHead,
-            ["theOffset"] = CFrame.new(0, 0, 0)
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    
+    local place_id = game.PlaceId
+    
+    if place_id == 2788229376 or place_id == 120685460695697 then
+        local handle = tool:FindFirstChild("Handle")
+        if handle then
+            ReplicatedStorage.MainEvent:FireServer("ShootGun", handle, handle.CFrame.Position, targetHead.Position, targetHead, Vector3.new(0, 0, -1))
+        end
+    else
+        ReplicatedStorage.MainEvent:FireServer("Shoot", {
+            [1] = {},
+            [2] = {},
+            [3] = hrp.Position,
+            [4] = hrp.Position,
+            [5] = Workspace:GetServerTimeNow()
         })
     end
-
-    ReplicatedStorage.MainEvent:FireServer(argument1, argument2)
 end
+
 local function GetLocalPlayerTool()
     local character = LocalPlayer.Character
     if not character or not character.Parent then
@@ -1321,22 +1329,45 @@ task.spawn(function()
     end
 end)
 
-local oldRaycast = workspace.Raycast
-
-workspace.Raycast = function(origin, direction, params)
-    if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
-        local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-        if target and target.Character then
-            local targetPart = target.Character:FindFirstChild("Head")
-            if targetPart then
-                local targetPos = targetPart.Position
-                local newDirection = (targetPos - origin).Unit * direction.Magnitude
-                return oldRaycast(origin, newDirection, params)
+local function HookAllRaycastMethods()
+    local methods = {
+        "Raycast",
+        "FindPartOnRay",
+        "FindPartOnRayWithIgnoreList",
+        "FindPartOnRayWithWhitelist",
+        "GetPartOnRay"
+    }
+    
+    for _, methodName in ipairs(methods) do
+        local oldMethod = Workspace[methodName]
+        if oldMethod then
+            Workspace[methodName] = function(...)
+                if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
+                    local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+                    if target and target.Character then
+                        local targetPart = target.Character:FindFirstChild("Head")
+                        if targetPart then
+                            if methodName == "Raycast" then
+                                local args = {...}
+                                local origin = args[1]
+                                local direction = args[2]
+                                local params = args[3]
+                                local targetPos = targetPart.Position
+                                local newDirection = (targetPos - origin).Unit * direction.Magnitude
+                                return oldMethod(origin, newDirection, params)
+                            else
+                                return targetPart, targetPart.Position
+                            end
+                        end
+                    end
+                end
+                return oldMethod(...)
             end
         end
     end
-    return oldRaycast(origin, direction, params)
 end
+
+HookAllRaycastMethods()
 
 local function UseDatArgBoi()
     if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
