@@ -1329,50 +1329,36 @@ task.spawn(function()
     end
 end)
 
-llocal function HookAllRaycastMethods()
-    local methods = {
-        "Raycast",
-        "FindPartOnRay",
-        "FindPartOnRayWithIgnoreList",
-        "FindPartOnRayWithWhitelist",
-        "GetPartOnRay"
-    }
+-- Hook workspace:Raycast() method
+local function HookWorkspaceRaycast()
+    local success, oldRaycast = pcall(function()
+        return workspace.Raycast
+    end)
     
-    for _, methodName in ipairs(methods) do
-        local success, oldMethod = pcall(function()
-            return Workspace[methodName]
-        end)
-        
-        if success and oldMethod and type(oldMethod) == "function" then
-            pcall(function()
-                Workspace[methodName] = function(...)
-                    if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
-                        local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
-                        if target and target.Character then
-                            local targetPart = target.Character:FindFirstChild("Head")
-                            if targetPart then
-                                if methodName == "Raycast" then
-                                    local args = {...}
-                                    local origin = args[1]
-                                    local direction = args[2]
-                                    local params = args[3]
-                                    local targetPos = targetPart.Position
-                                    local newDirection = (targetPos - origin).Unit * direction.Magnitude
-                                    return oldMethod(origin, newDirection, params)
-                                else
-                                    return targetPart, targetPart.Position
-                                end
-                            end
-                        end
-                    end
-                    return oldMethod(...)
-                end
-            end)
-        end
+    if not success or type(oldRaycast) ~= "function" then
+        print("[MagicBullet] Could not hook workspace.Raycast")
+        return
     end
+    
+    workspace.Raycast = function(self, origin, direction, params)
+        if getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then
+            local target = getgenv().ReignMatcha.BulletRedirection.Internal.LockedTarget
+            if target and target.Character then
+                local targetPart = target.Character:FindFirstChild("Head")
+                if targetPart then
+                    local targetPos = targetPart.Position
+                    local newDirection = (targetPos - origin).Unit * direction.Magnitude
+                    return oldRaycast(self, origin, newDirection, params)
+                end
+            end
+        end
+        return oldRaycast(self, origin, direction, params)
+    end
+    
+    print("[MagicBullet] workspace.Raycast hooked successfully!")
 end
 
-pcall(HookAllRaycastMethods)
+pcall(HookWorkspaceRaycast)
 
 local function UseDatArgBoi()
     if not getgenv().ReignMatcha.BulletRedirection.Settings.MagicBullet then return end
